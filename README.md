@@ -1,95 +1,94 @@
 # Darkone NixOS Project Boilerplate
 
-Point de départ minimal pour démarrer un déploiement NixOS bâti sur le
+Minimal starting point for a NixOS deployment built on the
 [Darkone NixOS Framework](https://github.com/darkone-linux/darkone-nixos-framework).
 
-Ce dépôt fournit la structure attendue par le framework, un `etc/config.yaml`
-abondamment commenté à remplir, et rien d'autre. Aucun hôte, aucun utilisateur,
-aucun fichier généré — c'est à vous de tout déclarer.
+This repository provides the structure expected by the framework, a heavily
+commented `etc/config.yaml` to fill in, and nothing else. No hosts, no users,
+no generated files — everything is yours to declare.
 
 ## Structure
 
 ```
-flake.nix          Flake consommatrice (délègue à dnf)
-Justfile           Recettes (importe dnf/assets/default.just via .dnf/)
-etc/config.yaml    Source de vérité — éditez ce fichier en premier
-usr/               Vos surcharges locales
-  machines/        Artefacts par hôte (créés à l'installation)
-  users/           Personnalisations par utilisateur
-var/generated/     Sortie du générateur — créée à la première exécution
-.dnf/              Symlink vers les recettes Just du framework (bootstrap)
+flake.nix          Consumer flake (delegates to dnf)
+Justfile           Recipes (imports dnf/assets/default.just via .dnf/)
+etc/config.yaml    Single source of truth — edit this file first
+usr/               Your local overrides
+  machines/        Per-host artifacts (created at install time)
+  users/           Per-user customizations
+var/generated/     Generator output — created on first run
+.dnf/              Symlink to the framework's Just recipes (bootstrap)
 ```
 
-## Démarrage
+## Getting started
 
 ### 1. Bootstrap
 
-Le framework et son binaire `dnf-generator` sont récupérés depuis le store Nix.
-Une fois après clone :
+The framework and its `dnf-generator` binary are fetched from the Nix store.
+Run once after cloning:
 
 ```sh
-# Pose le symlink .dnf/ -> dérivation `assets` du framework
+# Create the .dnf/ symlink -> framework's `assets` derivation
 nix run github:darkone-linux/darkone-nixos-framework#init
 
-# Entre dans un shell qui expose `dnf-generator`, `colmena`, `sops`, `just`,
+# Enter a shell that exposes `dnf-generator`, `colmena`, `sops`, `just`,
 # `nixfmt`, `statix`, `nix-unit`, etc.
 nix develop github:darkone-linux/darkone-nixos-framework
 ```
 
-`just --list` doit maintenant afficher toutes les recettes du framework
-(groupes `apply`, `check`, `dev`, `info`, `install`, `manage`).
+`just --list` should now display all framework recipes
+(groups `apply`, `check`, `dev`, `info`, `install`, `manage`).
 
 ### 2. Configuration
 
-Ouvrez `etc/config.yaml`. C'est l'unique source de vérité pour votre
-déploiement (zones réseau, utilisateurs, hôtes, services). Les commentaires
-décrivent chaque champ ; remplissez selon votre topologie.
+Open `etc/config.yaml`. This is the single source of truth for your deployment
+(network zones, users, hosts, services). Comments describe every field; fill it
+in according to your topology.
 
-### 3. Première génération
+### 3. First generation
 
 ```sh
-QUIET=1 just generate     # produit var/generated/*.nix depuis etc/config.yaml
+QUIET=1 just generate     # produces var/generated/*.nix from etc/config.yaml
 QUIET=1 just check-flake  # nix flake check
 ```
 
-À la première exécution, le générateur crée `var/generated/` et les fichiers
-auto-importés `usr/modules/default.nix`, `usr/home/modules/default.nix`,
-etc. Ces fichiers sont **commités**.
+On the first run, the generator creates `var/generated/` and the auto-imported
+files `usr/modules/default.nix`, `usr/home/modules/default.nix`, etc. These
+files are **committed**.
 
-### 4. Initialisation des secrets (admin)
+### 4. Secrets initialization (admin)
 
-Si vous gérez les déploiements depuis cet hôte (clé SSH `nix`, clé
-infrastructure SOPS, mot de passe par défaut) :
+If you manage deployments from this host (SSH `nix` key, SOPS infrastructure
+key, default password):
 
 ```sh
 just configure-admin-host
 ```
 
-Cette recette est idempotente : elle ne recrée ce qui existe déjà. Elle
-peuple `usr/secrets/` (clés age, fichier `.sops.yaml`, secrets chiffrés).
+This recipe is idempotent: it never recreates what already exists. It populates
+`usr/secrets/` (age keys, `.sops.yaml` file, encrypted secrets).
 
-### 5. Installer un premier hôte
+### 5. Install a first host
 
-Une fois `etc/config.yaml` rempli avec au moins un host disposant d'un bloc
-`disko` :
+Once `etc/config.yaml` has at least one host with a `disko` block:
 
 ```sh
 just install <hostname>        # nixos-anywhere + disko
-just configure <hostname>      # extraction hardware + push clé infra
-just apply-verbose <hostname>  # premier déploiement
+just configure <hostname>      # hardware extraction + push infra key
+just apply-verbose <hostname>  # first deployment
 ```
 
-Ou en un seul coup : `just full-install <hostname>`.
+Or in one shot: `just full-install <hostname>`.
 
-## Pointer sur une version stable du framework
+## Pinning to a stable framework version
 
 ```sh
 nixos-rebuild switch --flake .#<host> \
   --override-input dnf github:darkone-linux/darkone-nixos-framework/<tag>
 ```
 
-## Pour aller plus loin
+## Going further
 
-- Documentation publique : <https://github.com/darkone-linux/dnf-doc>
-- Code du framework : <https://github.com/darkone-linux/darkone-nixos-framework>
-- Code du générateur : <https://github.com/darkone-linux/dnf-generator>
+- Public documentation: <https://github.com/darkone-linux/dnf-doc>
+- Framework source: <https://github.com/darkone-linux/darkone-nixos-framework>
+- Generator source: <https://github.com/darkone-linux/dnf-generator>
