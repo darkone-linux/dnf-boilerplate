@@ -1,0 +1,203 @@
+# =============================================================================
+# Darkone NixOS Framework — declarative configuration
+# =============================================================================
+#
+# This file is the single source of truth for your deployment. The `dnf-
+# generator` binary reads it and produces `var/generated/*.nix` files that
+# the framework's `lib.mkConfigurations` consumes.
+#
+# Regenerate after every edit:
+#   just generate         (or QUIET=1 just generate)
+#
+# Sections, in order:
+#   network   — global parameters (domain, locale, headscale coordination)
+#   zones     — sub-networks (LAN, guest, remote site, ...)
+#   users     — accounts, common to all zones
+#   hosts     — machines to deploy
+#
+# Conventions:
+#   - YAML keys use camelCase to match how they appear as Nix attrs.
+#   - All IPs in a zone share the zone's `ipPrefix`; the per-host suffix
+#     is given by `zone: "<zoneName>:<X.Y>"`.
+#   - `profile` references a host or user profile defined in the framework
+#     (or overridden under usr/modules/host or usr/home/profiles).
+
+# =============================================================================
+# Global network configuration
+# =============================================================================
+
+network:
+
+  # Your top-level DNS domain (used for headscale, services, certificates).
+  domain: "example.lan"
+
+  # Default locale/timezone applied to every host unless overridden per-zone.
+  default:
+    locale: "en_US.UTF-8"
+    timezone: "UTC"
+
+  # Headscale = self-hosted Tailscale coordination server, used to mesh
+  # remote hosts. Set `enable: false` if you don't use it; you can still
+  # define zones and deploy locally.
+  coordination:
+    enable: false
+    hostname: "hcs"        # short name of the headscale host
+    domain: "headscale"    # subdomain used: <domain>.<network.domain>
+
+# =============================================================================
+# Network zones
+# =============================================================================
+#
+# A "zone" is a sub-network (your home LAN, a guest LAN, a remote site, etc.).
+# Each zone has:
+#   - an IP prefix (first two octets of an RFC1918 /16, e.g. "10.0")
+#   - a gateway host (WAN + LAN interfaces, optional VPN address)
+#   - optional locale/timezone overrides
+#
+# Hosts reference a zone by name (and optionally a static suffix) via:
+#   zone: "<zoneName>:<X.Y>"      → fixed IP <ipPrefix>.<X.Y>
+#   zone: "<zoneName>"            → dynamic (DHCP) within the zone
+#
+# Uncomment and adapt the example below, or define your own zones.
+
+zones:
+
+  # ---------------------------------------------------------------------------
+  # Example zone — replace `main` with your zone name and uncomment.
+  # ---------------------------------------------------------------------------
+  #
+  # main:
+  #   description: "Main home network"
+  #   locale: "en_US.UTF-8"        # optional, defaults to network.default.locale
+  #   timezone: "UTC"              # optional, defaults to network.default.timezone
+  #   ipPrefix: "10.0"             # zone uses 10.0.0.0/16
+  #   gateway:
+  #     wan:
+  #       interface: "enp1s0"      # uplink NIC on the gateway host
+  #     lan:
+  #       interfaces: ["enp2s0"]   # internal NIC(s) on the gateway host
+  #     vpn:
+  #       ipv4: "100.64.0.2"       # tailscale IP of the gateway (set after headscale registration)
+
+  # ---------------------------------------------------------------------------
+  # All-zones common configuration (merged into each zone).
+  # ---------------------------------------------------------------------------
+
+  common:
+
+    # Non-NixOS devices reachable by name (phones, printers, IoT, ...).
+    # Each entry sets a static last-octet within every zone and an /etc/hosts
+    # entry across all NixOS machines in the deployment.
+    extraHosts: {}
+    #
+    #   phone-alice:
+    #     ip: "5.1"                # host suffix; full IP = <zone.ipPrefix>.5.1
+    #     name: "Alice's phone"
+    #     mac: "ea:10:53:9d:df:d2"
+
+# =============================================================================
+# Users
+# =============================================================================
+#
+# Users are common to all zones. Each user gets a uid, a home-manager profile,
+# and a list of groups (used by hosts to filter who is authorized).
+#
+# Available built-in profiles (see dnf/home/profiles/):
+#   nix-admin   — administrator with maintenance tooling (cargo, colmena, ...)
+#   normal      — standard interactive user
+#   teenager    — restricted for teenagers
+#   child       — heavily restricted for young children
+#   baby        — minimal session for very young children
+#   student     — academic profile
+#
+# Override or define new profiles under usr/home/profiles/<name>.nix.
+
+users: {}
+#
+#   alice:
+#     uid: 1000
+#     name: "Alice"
+#     email: "alice@example.lan"
+#     profile: "nix-admin"
+#     groups: ["zone-main", "global"]
+#
+#   bob:
+#     uid: 1001
+#     name: "Bob"
+#     profile: "normal"
+#     groups: ["zone-main"]
+
+# =============================================================================
+# Hosts
+# =============================================================================
+#
+# Each host is a machine to manage. The framework produces:
+#   - one nixosConfiguration per host
+#   - one Colmena hive entry per host (for `just apply <host>`)
+#
+# Required fields:
+#   hostname    — DNS-friendly identifier ([a-z]+ — may repeat across zones)
+#   profile     — host profile (see dnf/hosts/ for built-ins:
+#                 gateway, server, laptop, desktop, portable, headscale, lan, minimal)
+#
+# Common optional fields:
+#   name        — human-readable description
+#   zone        — "<zone>:<suffix>" for static IP, or just "<zone>" for DHCP
+#   users       — list of user logins authorized to log in on this host
+#   groups      — host groups; users with matching group are also authorized
+#   tags        — colmena tags for selective deployment (`colmena apply --on @tag`)
+#   features    — non-service feature flags ("monitoring-node", "nfs-client", ...)
+#   services    — services to enable on this host (attset; see below)
+#   mac         — MAC address(es) of internal-facing NIC(s), comma-separated
+#   arch        — defaults to "x86_64-linux"
+#   disko       — disk layout for auto-install (only consulted at install time)
+#   range       — [from, to] to template multiple identical hosts at once
+#   hosts       — sub-host-group map for nearly-identical hosts with per-host overrides
+#
+# `services` is an attset; the keys enable framework services, the (optional)
+# values customize them. Example services:
+#   adguardhome, homepage, ncps, auth, users, forgejo, monitoring,
+#   headscale, vaultwarden, mattermost, nfs, nextcloud, restic, immich, ...
+
+hosts: []
+#
+#   # A gateway with static IP 10.0.1.1
+#   - hostname: "gw"
+#     name: "Main gateway"
+#     zone: "main:1.1"
+#     profile: "gateway"
+#     tags: ["main"]
+#     features: ["monitoring-node"]
+#     services:
+#       adguardhome:                       # DNS + ad blocking
+#       homepage:                          # service portal
+#       forgejo:                           # self-hosted git
+#       monitoring:                        # node_exporter for Grafana
+#     disko:
+#       profile: "ext4-1-disk"
+#
+#   # A homelab server with NFS + Nextcloud, static IP 10.0.1.2
+#   - hostname: "homelab"
+#     name: "Home server"
+#     zone: "main:1.2"
+#     profile: "server"
+#     users: ["alice"]
+#     services:
+#       nfs:
+#       nextcloud:
+#       restic:
+#
+#   # A laptop, dynamic IP, two NICs (ethernet + wifi)
+#   - hostname: "mylaptop"
+#     name: "My laptop"
+#     zone: "main"
+#     profile: "laptop"
+#     groups: ["zone-main"]
+#     mac: "f0:1f:af:14:62:a5,bc:82:56:25:b8:45"
+#
+#   # Four identical guest desktops, suffix 3.1 to 3.4
+#   - hostname: "desktop-%'02s"
+#     name: "Guest desktop #%'02s"
+#     zone: "main:3.%d"
+#     profile: "desktop"
+#     range: [1, 4]

@@ -1,0 +1,11 @@
+result
+target
+tmp
+dnf
+doc
+src
+.network
+.Trash*
+.gitmodules
+.direnv
+.dnf
