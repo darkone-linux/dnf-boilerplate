@@ -7,6 +7,7 @@
 # the bootstrap runs.
 
 import? '.dnf/just/project.just'
+#import? '.dnf/just/dev.just'     # uncomment for framework/sub-project development
 
 # Justfile help
 _default:
