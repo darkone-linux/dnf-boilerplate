@@ -11,7 +11,7 @@ no generated files — everything is yours to declare.
 
 ```
 flake.nix          Consumer flake (delegates to dnf)
-Justfile           Recipes (imports dnf/assets/default.just via .dnf/)
+Justfile           Recipes (imports dnf/assets/just/project.just via .dnf/)
 etc/config.yaml    Single source of truth — edit this file first
 usr/               Your local overrides
   machines/        Per-host artifacts (created at install time)

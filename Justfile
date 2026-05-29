@@ -6,7 +6,7 @@
 # `import?` keeps `just --list` working (showing local recipes only) before
 # the bootstrap runs.
 
-import? '.dnf/default.just'
+import? '.dnf/just/project.just'
 
 # Justfile help
 _default:

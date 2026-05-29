@@ -11,7 +11,7 @@ aucun fichier généré — c'est à vous de tout déclarer.
 
 ```
 flake.nix          Flake consommatrice (délègue à dnf)
-Justfile           Recettes (importe dnf/assets/default.just via .dnf/)
+Justfile           Recettes (importe dnf/assets/just/project.just via .dnf/)
 etc/config.yaml    Source de vérité — éditez ce fichier en premier
 usr/               Vos surcharges locales
   machines/        Artefacts par hôte (créés à l'installation)
