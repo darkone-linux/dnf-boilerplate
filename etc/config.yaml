@@ -44,6 +44,16 @@ network:
     hostname: "hcs"        # short name of the headscale host
     domain: "headscale"    # subdomain used: <domain>.<network.domain>
 
+  # Matrix-based alerting. When a host runs the `monitoring` service alongside
+  # a Matrix server, Prometheus Alertmanager forwards alerts into Matrix rooms
+  # through a bot. `admin` is the local part of the human account invited to
+  # those rooms (full MXID: <admin>@<network.domain>). Configure the bot once
+  # with `just configure-alert-bot`. Optional — omit this block if you don't
+  # run Matrix alerting.
+  #
+  # matrix:
+  #   admin: "alice"       # human local part invited to the alert rooms
+
 # =============================================================================
 # Network zones
 # =============================================================================
@@ -101,6 +111,7 @@ zones:
 #
 # Users are common to all zones. Each user gets a uid, a home-manager profile,
 # and a list of groups (used by hosts to filter who is authorized).
+# Set `disabled: true` to keep a user declared but lock the account.
 #
 # Available built-in profiles (see dnf/home/profiles/):
 #   nix-admin   — administrator with maintenance tooling (cargo, colmena, ...)
@@ -126,6 +137,7 @@ users: {}
 #     name: "Bob"
 #     profile: "normal"
 #     groups: ["zone-main"]
+#     disabled: true          # optional, defaults to false (account locked when true)
 
 # =============================================================================
 # Hosts
@@ -146,7 +158,11 @@ users: {}
 #   users       — list of user logins authorized to log in on this host
 #   groups      — host groups; users with matching group are also authorized
 #   tags        — colmena tags for selective deployment (`colmena apply --on @tag`)
-#   features    — non-service feature flags ("monitoring-node", "nfs-client", ...)
+#   features    — non-service feature flags ("monitoring-node", "nfs-client", ...).
+#                 Alert class overrides (default derives from `profile`):
+#                   "alert-critical"     — node-down/resource alerts page (incident)
+#                   "alert-non-critical" — alerts only warn
+#                   "alert-disabled"     — emit no node-level alerts at all
 #   services    — services to enable on this host (attset; see below)
 #   mac         — MAC address(es) of internal-facing NIC(s), comma-separated
 #   arch        — defaults to "x86_64-linux"
