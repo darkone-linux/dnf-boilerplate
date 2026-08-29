@@ -17,10 +17,12 @@
 #
 # Conventions:
 #   - YAML keys use camelCase to match how they appear as Nix attrs.
+#   - Unknown keys are rejected: a typo fails the generation with the exact
+#     path (e.g. `hosts[2]: unknown field "hsotname"`).
 #   - All IPs in a zone share the zone's `ipPrefix`; the per-host suffix
 #     is given by `zone: "<zoneName>:<X.Y>"`.
-#   - `profile` references a host or user profile defined in the framework
-#     (or overridden under usr/modules/host or usr/home/profiles).
+#   - `profile` references a host or user profile of the framework
+#     (or one of yours, under `usr/modules/host/` or `usr/home/profiles/`).
 
 # =============================================================================
 # Global network configuration
@@ -29,12 +31,15 @@
 network:
 
   # Your top-level DNS domain (used for headscale, services, certificates).
+  # Each zone gets its own subdomain: <zoneName>.<network.domain>.
   domain: "example.lan"
 
   # Default locale/timezone applied to every host unless overridden per-zone.
+  # Formats are checked: locale as `xx_XX.UTF-8`, timezone as `Area/City`
+  # (a bare "UTC" is rejected — use "Etc/UTC").
   default:
     locale: "en_US.UTF-8"
-    timezone: "UTC"
+    timezone: "Etc/UTC"
 
   # Headscale = self-hosted Tailscale coordination server, used to mesh
   # remote hosts. Set `enable: false` if you don't use it; you can still
@@ -43,6 +48,19 @@ network:
     enable: false
     hostname: "hcs"        # short name of the headscale host
     domain: "headscale"    # subdomain used: <domain>.<network.domain>
+
+  # Outgoing mail relay, used by the hosts running the `postfix` module
+  # (system mail, alert digests). The password is not stored here: it lives in
+  # sops under the `smtp/password` key (`just sops`). Optional — omit the
+  # block if your fleet sends no mail.
+  #
+  # smtp:
+  #   protocol: "submissions"   # http | https | submission | submissions
+  #   server: "smtp.example.net"
+  #   port: 465
+  #   username: "postmaster@example.net"
+  #   sender: "noreply@example.lan"
+  #   tls: true
 
   # Matrix-based alerting. When a host runs the `monitoring` service alongside
   # a Matrix server, Prometheus Alertmanager forwards alerts into Matrix rooms
@@ -61,49 +79,50 @@ network:
 # A "zone" is a sub-network (your home LAN, a guest LAN, a remote site, etc.).
 # Each zone has:
 #   - an IP prefix (first two octets of an RFC1918 /16, e.g. "10.0")
-#   - a gateway host (WAN + LAN interfaces, optional VPN address)
+#   - an optional gateway host (WAN + LAN interfaces, optional VPN address)
 #   - optional locale/timezone overrides
 #
 # Hosts reference a zone by name (and optionally a static suffix) via:
 #   zone: "<zoneName>:<X.Y>"      → fixed IP <ipPrefix>.<X.Y>
 #   zone: "<zoneName>"            → dynamic (DHCP) within the zone
 #
+# A `www` zone always exists implicitly: it holds the hosts declared with a
+# public address (`ipv4.external`), typically a VPS.
+#
 # Uncomment and adapt the example below, or define your own zones.
 
-zones:
-
-  # ---------------------------------------------------------------------------
-  # Example zone — replace `main` with your zone name and uncomment.
-  # ---------------------------------------------------------------------------
-  #
-  # main:
-  #   description: "Main home network"
-  #   locale: "en_US.UTF-8"        # optional, defaults to network.default.locale
-  #   timezone: "UTC"              # optional, defaults to network.default.timezone
-  #   ipPrefix: "10.0"             # zone uses 10.0.0.0/16
-  #   gateway:
-  #     wan:
-  #       interface: "enp1s0"      # uplink NIC on the gateway host
-  #     lan:
-  #       interfaces: ["enp2s0"]   # internal NIC(s) on the gateway host
-  #     vpn:
-  #       ipv4: "100.64.0.2"       # tailscale IP of the gateway (set after headscale registration)
-
-  # ---------------------------------------------------------------------------
-  # All-zones common configuration (merged into each zone).
-  # ---------------------------------------------------------------------------
-
-  common:
-
-    # Non-NixOS devices reachable by name (phones, printers, IoT, ...).
-    # Each entry sets a static last-octet within every zone and an /etc/hosts
-    # entry across all NixOS machines in the deployment.
-    extraHosts: {}
-    #
-    #   phone-alice:
-    #     ip: "5.1"                # host suffix; full IP = <zone.ipPrefix>.5.1
-    #     name: "Alice's phone"
-    #     mac: "ea:10:53:9d:df:d2"
+zones: {}
+#
+#   main:
+#     description: "Main home network"
+#     locale: "en_US.UTF-8"        # optional, defaults to network.default.locale
+#     timezone: "Europe/Paris"     # optional, defaults to network.default.timezone
+#     ipPrefix: "10.0"             # zone uses 10.0.0.0/16
+#
+#     # A gateway block turns one host of the zone into its router. Both the
+#     # WAN interface and at least one LAN interface are mandatory.
+#     gateway:
+#       wan:
+#         interface: "enp1s0"      # uplink NIC on the gateway host
+#       lan:
+#         interfaces: ["enp2s0"]   # internal NIC(s), bridged together
+#         dhcp-range: ["10.0.3.200,10.0.3.249,24h"]   # optional, this is the default
+#       vpn:
+#         ipv4: "100.64.0.2"       # tailnet IP of the gateway (100.64.0.0/10)
+#
+#     # Non-NixOS devices reachable by name (phones, printers, IoT, ...).
+#     # Each entry gets a fixed IP in this zone, a DHCP reservation on its MAC
+#     # and an /etc/hosts + DNS record across the deployment.
+#     extraHosts:
+#       phone-alice:
+#         ip: "5.1"                # host suffix; full IP = <ipPrefix>.5.1
+#         name: "Alice's phone"
+#         mac: "ea:10:53:9d:df:d2" # lowercase hex, required for the reservation
+#         aliases: ["alice-mobile"]
+#       printer:
+#         ip: "5.10"
+#         name: "Office printer"
+#         mac: "00:1b:a9:12:34:56"
 
 # =============================================================================
 # Users
@@ -113,20 +132,30 @@ zones:
 # and a list of groups (used by hosts to filter who is authorized).
 # Set `disabled: true` to keep a user declared but lock the account.
 #
+# A `nix` account (uid 65000) is always added implicitly: it is the user
+# colmena deploys with. Do not declare it here.
+#
 # Available built-in profiles (see dnf/home/profiles/):
 #   nix-admin   — administrator with maintenance tooling (cargo, colmena, ...)
+#   admin       — administrator, without the deployment tooling
+#   advanced    — power user (development and system tools)
 #   normal      — standard interactive user
+#   gamer       — normal + gaming tools
+#   student     — academic profile
 #   teenager    — restricted for teenagers
 #   child       — heavily restricted for young children
 #   baby        — minimal session for very young children
-#   student     — academic profile
+#   minimal     — bare session, no desktop tooling
 #
-# Override or define new profiles under usr/home/profiles/<name>.nix.
+# Define your own under usr/home/profiles/<name>/ (see the README there).
+#
+# Every declared login also needs a `usr/users/<login>/default.nix` file,
+# even empty: it is imported unconditionally.
 
 users: {}
 #
 #   alice:
-#     uid: 1000
+#     uid: 1000                 # 1000..64999, unique across the deployment
 #     name: "Alice"
 #     email: "alice@example.lan"
 #     profile: "nix-admin"
@@ -148,32 +177,55 @@ users: {}
 #   - one Colmena hive entry per host (for `just apply <host>`)
 #
 # Required fields:
-#   hostname    — DNS-friendly identifier ([a-z]+ — may repeat across zones)
-#   profile     — host profile (see dnf/hosts/ for built-ins:
-#                 gateway, server, laptop, desktop, portable, headscale, lan, minimal)
+#   hostname    — DNS-friendly identifier (letter, then letters/digits/_/-)
+#   profile     — host profile. Built-ins (see dnf/modules/mixin/host/):
+#                 minimal, server, gateway, hcs, desktop, laptop, portable, vm
+#
+# Location — exactly one of:
+#   zone        — "<zone>:<suffix>" for a static IP, or "<zone>" for DHCP
+#   ipv4        — { external: "<public IP>" } for a host outside your zones
+#                 (VPS); it lands in the implicit `www` zone.
+#                 `internal:` sets its tailnet address.
 #
 # Common optional fields:
 #   name        — human-readable description
-#   zone        — "<zone>:<suffix>" for static IP, or just "<zone>" for DHCP
 #   users       — list of user logins authorized to log in on this host
-#   groups      — host groups; users with matching group are also authorized
+#   groups      — host groups; users with a matching group are also authorized
+#   aliases     — extra DNS names for this host inside its zone
 #   tags        — colmena tags for selective deployment (`colmena apply --on @tag`)
-#   features    — non-service feature flags ("monitoring-node", "nfs-client", ...).
+#   features    — non-service feature flags, `name` or `name:value` (the value
+#                 defaults to the host's zone):
+#                   "monitoring-node"    — scraped by the zone's Prometheus
+#                   "nfs-client"         — mounts the zone's NFS exports
+#                   "build-farm"         — offers its CPU to the other hosts
 #                 Alert class overrides (default derives from `profile`):
 #                   "alert-critical"     — node-down/resource alerts page (incident)
 #                   "alert-non-critical" — alerts only warn
 #                   "alert-disabled"     — emit no node-level alerts at all
 #   services    — services to enable on this host (attset; see below)
 #   mac         — MAC address(es) of internal-facing NIC(s), comma-separated
-#   arch        — defaults to "x86_64-linux"
-#   disko       — disk layout for auto-install (only consulted at install time)
+#   arch        — "x86_64" (default), or "aarch64:rpi5" / "aarch64:rpi4" /
+#                 "aarch64:rpi3" / "aarch64:rpi02" for a Raspberry Pi
+#   disko       — disk layout, consulted at install time only. `profile` names
+#                 a file of dnf/hosts/disko/ (btrfs-1-disk, ext4-1-disk,
+#                 ext4-1-disk-legacy, luks-btrfs-1-disk, server-1-disk,
+#                 server-4-disks) or of usr/hosts/disko/; `devices` maps the
+#                 layout's device slots to real block devices.
 #   range       — [from, to] to template multiple identical hosts at once
-#   hosts       — sub-host-group map for nearly-identical hosts with per-host overrides
+#   hosts       — sub-host map for nearly-identical hosts with per-host overrides
 #
 # `services` is an attset; the keys enable framework services, the (optional)
-# values customize them. Example services:
-#   adguardhome, homepage, ncps, auth, users, forgejo, monitoring,
-#   headscale, vaultwarden, mattermost, nfs, nextcloud, restic, immich, ...
+# values customize how they appear on the portal and in DNS:
+#   title, description, icon    — homepage entry
+#   domain                      — subdomain label (defaults to the service name)
+#   global: true                — publish as <domain>.<network.domain> instead
+#                                 of <domain>.<zone>.<network.domain>
+#
+# Available services (see dnf/modules/service/):
+#   adguardhome, ai, docs, dnsmasq, element, fail2ban, forgejo, garage,
+#   geneweb, harmonia, headscale, homepage, idm, immich, jellyfin, jitsi-meet,
+#   matrix, mealie, monitoring, nextcloud, nfs, nix-cache, outline, oxicloud,
+#   printing, prometheus, restic, searx, turn, vaultwarden
 
 hosts: []
 #
@@ -188,9 +240,13 @@ hosts: []
 #       adguardhome:                       # DNS + ad blocking
 #       homepage:                          # service portal
 #       forgejo:                           # self-hosted git
-#       monitoring:                        # node_exporter for Grafana
+#         title: "Git"
+#         domain: "git"                    # git.main.example.lan
+#       monitoring:                        # node_exporter + Grafana
 #     disko:
 #       profile: "ext4-1-disk"
+#       devices:
+#         main: "/dev/sda"
 #
 #   # A homelab server with NFS + Nextcloud, static IP 10.0.1.2
 #   - hostname: "homelab"
@@ -198,6 +254,7 @@ hosts: []
 #     zone: "main:1.2"
 #     profile: "server"
 #     users: ["alice"]
+#     features: ["monitoring-node"]
 #     services:
 #       nfs:
 #       nextcloud:
@@ -210,6 +267,16 @@ hosts: []
 #     profile: "laptop"
 #     groups: ["zone-main"]
 #     mac: "f0:1f:af:14:62:a5,bc:82:56:25:b8:45"
+#
+#   # A public VPS, outside any local zone
+#   - hostname: "vps"
+#     name: "Public server"
+#     ipv4:
+#       external: "203.0.113.10"
+#       internal: "100.64.0.5"             # its tailnet address
+#     profile: "server"
+#     services:
+#       headscale:
 #
 #   # Four identical guest desktops, suffix 3.1 to 3.4
 #   - hostname: "desktop-%'02s"

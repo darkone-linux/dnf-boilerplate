@@ -25,9 +25,12 @@
   #----------------------------------------------------------------------------
   #
   # The whole assembly logic (Colmena hive, nixosConfigurations, devShells,
-  # ISO images) lives in the framework. This project only forwards its own
-  # `workDir` (= flake root) so the framework can read its `etc/config.yaml`,
-  # `var/generated/` and `usr/` overlay.
+  # ISO images, the `init` app) lives in the framework. This project only
+  # forwards its own `workDir` (= flake root) so the framework can read its
+  # `etc/config.yaml`, `var/generated/` and `usr/` overlay.
+  #
+  # `nix run .#init` re-links `dnf/` onto the revision pinned above — run it
+  # after every change of that pin.
 
   outputs = inputs: inputs.dnf.lib.mkConfigurations ./.;
 }

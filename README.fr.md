@@ -1,95 +1,154 @@
 # Darkone NixOS Project Boilerplate
 
-Point de départ minimal pour démarrer un déploiement NixOS bâti sur le
+Point de départ minimal pour un déploiement NixOS bâti sur le
 [Darkone NixOS Framework](https://github.com/darkone-linux/darkone-nixos-framework).
 
 Ce dépôt fournit la structure attendue par le framework, un `etc/config.yaml`
-abondamment commenté à remplir, et rien d'autre. Aucun hôte, aucun utilisateur,
-aucun fichier généré — c'est à vous de tout déclarer.
+abondamment commenté à remplir, et rien d'autre. Aucun hôte, aucun
+utilisateur, aucun fichier généré — c'est à vous de tout déclarer.
 
 ## Structure
 
 ```
-flake.nix          Flake consommatrice (délègue à dnf)
-Justfile           Recettes (importe dnf/assets/just/project.just via .dnf/)
-etc/config.yaml    Source de vérité — éditez ce fichier en premier
-usr/               Vos surcharges locales
-  machines/        Artefacts par hôte (créés à l'installation)
-  users/           Personnalisations par utilisateur
-var/generated/     Sortie du générateur — créée à la première exécution
-.dnf/              Symlink vers les recettes Just du framework (bootstrap)
+flake.nix           Flake consommatrice (délègue tout à dnf)
+Justfile            Recettes (importe dnf/assets/just/project.just)
+etc/config.yaml     Source de vérité — éditez ce fichier en premier
+usr/                Votre surcouche locale
+  modules/          Modules NixOS propres à ce déploiement
+  home/             Surcouche home-manager, profils utilisateurs perso
+  users/<login>/    Personnalisations par utilisateur (un dossier par login)
+  machines/<hôte>/  Artefacts d'installation (disques, matériel)
+  secrets/          Secrets SOPS et clé de déploiement (jamais à la main)
+var/generated/      Sortie du générateur — à commiter, jamais à éditer
+dnf/                Symlink vers le framework (créé par `nix run .#init`)
 ```
 
 ## Démarrage
 
-### 1. Bootstrap
+### 1. Créer votre dépôt
 
-Le framework et son binaire `dnf-generator` sont récupérés depuis le store Nix.
-Une fois après clone :
+Depuis le [template](https://github.com/darkone-linux/dnf-boilerplate)
+(bouton *Use this template*), ou par clone. Tout ce qui suit s'y passe.
+
+### 2. Amorcer le framework
 
 ```sh
-# Pose le symlink .dnf/ -> dérivation `assets` du framework
+# Pose le lien dnf/ -> l'arbre du framework dans le store nix
 nix run github:darkone-linux/darkone-nixos-framework#init
 
-# Entre dans un shell qui expose `dnf-generator`, `colmena`, `sops`, `just`,
-# `nixfmt`, `statix`, `nix-unit`, etc.
+# Entre dans un shell exposant dnf-generator, colmena, sops, just, nixfmt…
 nix develop github:darkone-linux/darkone-nixos-framework
 ```
 
-`just --list` doit maintenant afficher toutes les recettes du framework
-(groupes `apply`, `check`, `dev`, `info`, `install`, `manage`).
+`just --list` affiche désormais toutes les recettes du framework (groupes
+`apply`, `check`, `dev`, `install`, `manage`).
 
-### 2. Configuration
+> [!NOTE]
+> Le lien `dnf/` est ce qui donne ses recettes à `just` et ses profils au
+> générateur (il les résout sur le disque). Il est gitignoré. Dès que votre
+> projet a son propre `flake.lock`, rafraîchissez-le avec `nix run .#init` :
+> cette forme suit la révision que *votre* lock épingle, tooling et système
+> construit ne divergent donc jamais.
 
-Ouvrez `etc/config.yaml`. C'est l'unique source de vérité pour votre
-déploiement (zones réseau, utilisateurs, hôtes, services). Les commentaires
-décrivent chaque champ ; remplissez selon votre topologie.
-
-### 3. Première génération
-
-```sh
-QUIET=1 just generate     # produit var/generated/*.nix depuis etc/config.yaml
-QUIET=1 just check-flake  # nix flake check
-```
-
-À la première exécution, le générateur crée `var/generated/` et les fichiers
-auto-importés `usr/modules/default.nix`, `usr/home/modules/default.nix`,
-etc. Ces fichiers sont **commités**.
-
-### 4. Initialisation des secrets (admin)
-
-Si vous gérez les déploiements depuis cet hôte (clé SSH `nix`, clé
-infrastructure SOPS, mot de passe par défaut) :
+### 3. Initialiser les secrets d'administration
 
 ```sh
 just configure-admin-host
 ```
 
-Cette recette est idempotente : elle ne recrée ce qui existe déjà. Elle
-peuple `usr/secrets/` (clés age, fichier `.sops.yaml`, secrets chiffrés).
+Idempotente : crée la clé de déploiement `nix`, les clés age, `.sops.yaml`, un
+mot de passe par défaut et les secrets internes des services déclarés ; ne
+recrée jamais ce qui existe. À relancer après chaque nouveau service, hôte ou
+utilisateur.
 
-### 5. Installer un premier hôte
+### 4. Décrire le déploiement
 
-Une fois `etc/config.yaml` rempli avec au moins un host disposant d'un bloc
-`disko` :
+Tout se déclare dans `etc/config.yaml` (réseau, zones, utilisateurs, hôtes).
+Les commentaires décrivent chaque champ. Un premier poste tient en une zone,
+un utilisateur et un hôte — tout hôte appartient à une zone (ou porte une
+adresse publique `ipv4`) :
 
-```sh
-just install <hostname>        # nixos-anywhere + disko
-just configure <hostname>      # extraction hardware + push clé infra
-just apply-verbose <hostname>  # premier déploiement
+```yaml
+zones:
+  main:
+    description: "Réseau principal"
+    ipPrefix: "10.0"          # cette zone utilise 10.0.0.0/16
+
+users:
+  alice:
+    uid: 1000
+    name: "Alice"
+    profile: "nix-admin"
+    groups: ["global"]
+
+hosts:
+  - hostname: "poste"
+    name: "Poste de l'administrateur"
+    zone: "main:1.10"         # IP fixe 10.0.1.10 ("main" seul = DHCP)
+    profile: "desktop"
+    users: ["alice"]
+    disko:
+      profile: "btrfs-1-disk"
+      devices:
+        main: "/dev/nvme0n1"
 ```
 
-Ou en un seul coup : `just full-install <hostname>`.
-
-## Pointer sur une version stable du framework
+Puis régénérer et vérifier :
 
 ```sh
-nixos-rebuild switch --flake .#<host> \
+just generate      # var/generated/*.nix, usr/users/<login>/, usr/machines/<hôte>/
+just check-flake   # nix flake check
+git add . && git commit -m "Premier hôte"
+```
+
+> [!IMPORTANT]
+> Commitez avant de construire. Les flakes nix ne voient que les fichiers
+> suivis par git : un `var/generated/hosts.nix` ou un `usr/machines/<hôte>/`
+> non suivi fait échouer toutes les constructions.
+
+### 5. Installer le premier hôte
+
+```sh
+just build-iso                 # ISO du framework, portant votre clé
+# la graver, démarrer la machine dessus, noter son IP
+just full-install poste        # installation + configuration + déploiement
+```
+
+`full-install` enchaîne `just install` (nixos-anywhere + disko),
+`just configure` (extraction matérielle, envoi des clés) et
+`just apply-verbose`. Chaque étape reste utilisable séparément en cas d'échec.
+
+### 6. Au quotidien
+
+```sh
+just apply <hôte>       # déployer un hôte (colmena)
+just apply-local        # déployer la machine courante
+just enter <hôte>       # ssh en tant qu'utilisateur de maintenance nix
+just clean              # fix + check + generate + format, avant de commiter
+just update-flake       # met à jour les inputs, puis : nix run .#init
+```
+
+## Épingler une version du framework
+
+`flake.nix` suit la branche principale du framework. Pour figer une version,
+pointez l'input sur un tag :
+
+```nix
+inputs.dnf.url = "github:darkone-linux/darkone-nixos-framework/v0.1.0";
+```
+
+…ou surchargez ponctuellement :
+
+```sh
+nixos-rebuild switch --flake .#<hôte> \
   --override-input dnf github:darkone-linux/darkone-nixos-framework/<tag>
 ```
 
+Relancez `nix run .#init` après tout changement de révision épinglée.
+
 ## Pour aller plus loin
 
-- Documentation publique : <https://github.com/darkone-linux/dnf-doc>
+- Documentation : [FR](https://darkone-linux.github.io/fr/) • [EN](https://darkone-linux.github.io/en/)
 - Code du framework : <https://github.com/darkone-linux/darkone-nixos-framework>
+- Déploiement de référence : <https://github.com/darkone-linux/dnf-example>
 - Code du générateur : <https://github.com/darkone-linux/dnf-generator>

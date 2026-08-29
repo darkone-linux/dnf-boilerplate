@@ -1,13 +1,13 @@
 # dnf-boilerplate — consumer Justfile.
 #
-# `.dnf/` is a symlink to the framework's `assets` package in the nix store.
-# Bootstrap it once with:
+# `dnf/` is a symlink to the framework tree in the nix store, laid down once by:
 #   nix run github:darkone-linux/darkone-nixos-framework#init
-# `import?` keeps `just --list` working (showing local recipes only) before
-# the bootstrap runs.
+# It gives `just` its recipes and `dnf-generator` the profiles it resolves on
+# disk (`dnf/home/profiles/`, `dnf/hosts/disko/`). It is gitignored.
+# `import?` keeps `just --list` working (local recipes only) before that runs.
 
-import? '.dnf/just/project.just'
-#import? '.dnf/just/dev.just'     # uncomment for framework/sub-project development
+import? 'dnf/assets/just/project.just'
+#import? 'dnf/assets/just/dev.just'    # uncomment for framework/sub-project development
 
 # Justfile help
 _default:
