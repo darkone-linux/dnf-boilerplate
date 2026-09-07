@@ -62,15 +62,15 @@ network:
   #   sender: "noreply@example.lan"
   #   tls: true
 
-  # Matrix-based alerting. When a host runs the `monitoring` service alongside
-  # a Matrix server, Prometheus Alertmanager forwards alerts into Matrix rooms
-  # through a bot. `admin` is the local part of the human account invited to
-  # those rooms (full MXID: <admin>@<network.domain>). Configure the bot once
-  # with `just configure-alert-bot`. Optional — omit this block if you don't
-  # run Matrix alerting.
+  # Matrix administrators. `admins` holds local parts (full MXID:
+  # <admin>@<network.domain>) and drives both administrations: `admin` level on
+  # every mautrix bridge, and server admin through the MAS policy (MAS + Synapse
+  # admin APIs, `matrix-admin` UI). Those accounts are also invited to the
+  # Alertmanager rooms, configured once with `just configure-alert-bot`.
+  # Optional — omit this block if you don't run Matrix.
   #
   # matrix:
-  #   admin: "alice"       # human local part invited to the alert rooms
+  #   admins: ["alice"]    # local parts: bridge + server administrators
 
 # =============================================================================
 # Network zones
