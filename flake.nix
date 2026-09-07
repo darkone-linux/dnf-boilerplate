@@ -5,10 +5,17 @@
   # FLAKE INPUTS
   #----------------------------------------------------------------------------
   #
-  # The framework is consumed from its public GitHub repo. To pin against a
-  # released tag, append a ref to the URL or override at build time:
+  # The framework is consumed from its public GitHub repo, pinned to a release
+  # tag. The tag and the committed `flake.lock` are what make a fresh clone
+  # reproducible — tracking `main` would build a different tree every day.
   #
-  #   dnf.url = "github:darkone-linux/darkone-nixos-framework/v0.1.0";
+  # Upgrade to a newer release:
+  #
+  #   1. bump the tag below to the release you want
+  #   2. nix flake update dnf     # rewrites flake.lock, commit it
+  #   3. nix run .#init           # relink dnf/ onto the revision the lock pins
+  #
+  # Try one without committing to it:
   #
   #   nixos-rebuild switch --flake .#<host> \
   #     --override-input dnf github:darkone-linux/darkone-nixos-framework/<tag>
