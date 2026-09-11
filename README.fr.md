@@ -11,7 +11,7 @@ utilisateur, aucun fichier généré — c'est à vous de tout déclarer.
 
 ```
 flake.nix           Flake consommatrice (délègue tout à dnf)
-Justfile            Recettes (importe dnf/assets/just/project.just)
+Justfile            Recettes (importe dnf/just/project.just)
 etc/config.yaml     Source de vérité — éditez ce fichier en premier
 usr/                Votre surcouche locale
   modules/          Modules NixOS propres à ce déploiement

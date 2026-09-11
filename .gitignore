@@ -8,7 +8,7 @@
 !/TODO.*
 !/CHANGELOG.*
 
-# Framework symlinks laid down by `nix run .#init` — no trailing slash: a
+# Framework symlink laid down by `nix run .#init` — no trailing slash: a
 # symlink is not a directory for git, and `just install` runs `git add .`.
 /dnf
 /doc/

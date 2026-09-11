@@ -11,7 +11,7 @@ no generated files — everything is yours to declare.
 
 ```
 flake.nix           Consumer flake (delegates everything to dnf)
-Justfile            Recipes (imports dnf/assets/just/project.just)
+Justfile            Recipes (imports dnf/just/project.just)
 etc/config.yaml     Single source of truth — edit this file first
 usr/                Your local overlay
   modules/          Extra NixOS modules for this deployment

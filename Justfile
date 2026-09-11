@@ -6,8 +6,8 @@
 # disk (`dnf/home/profiles/`, `dnf/hosts/disko/`). It is gitignored.
 # `import?` keeps `just --list` working (local recipes only) before that runs.
 
-import? 'dnf/assets/just/project.just'
-#import? 'dnf/assets/just/dev.just'    # uncomment for framework/sub-project development
+import? 'dnf/just/project.just'
+#import? 'dnf/just/codev.just'    # uncomment in a co-development workspace (dnf/ checkout)
 
 # Justfile help
 _default:
