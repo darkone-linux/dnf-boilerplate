@@ -16,3 +16,6 @@
 /result/
 /target/
 tmp/
+
+# Test VM disks + UEFI vars (`dnf/scripts/vm-start.sh`).
+/var/vm/
