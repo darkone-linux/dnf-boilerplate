@@ -72,6 +72,16 @@ network:
   # matrix:
   #   admins: ["alice"]    # local parts: bridge + server administrators
 
+  # `fleet-update` defaults (`just fleet-update`, daily timer): one test wave
+  # per host profile in this order, `[others]` for the profiles not listed.
+  # Failures on critical profiles also reach the incidents room. Its options
+  # `--deployment-order` / `--critical-profiles` override both. Optional —
+  # omit the block to keep the tool's defaults, shown here.
+  #
+  # fleetUpdate:
+  #   deploymentOrder: "hcs:gateway:server:[others]:laptop"
+  #   criticalProfiles: "hcs:gateway:server"
+
 # =============================================================================
 # Network zones
 # =============================================================================
