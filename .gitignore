@@ -17,5 +17,12 @@
 /target/
 tmp/
 
-# Test VM disks + UEFI vars (`dnf/scripts/vm-start.sh`).
-/var/vm/
+# Runtime state (`var/deployments/` of fleet-update, test VM disks, logs): only
+# the generated inventory and the public keys are versioned.
+/var/*
+!/var/generated/
+!/var/security/
+/var/security/**
+!/var/security/**/
+!/var/security/**/*.pub
+!/var/security/**/.gitignore
