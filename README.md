@@ -17,7 +17,7 @@ usr/                Your local overlay
   modules/          Extra NixOS modules for this deployment
   home/             Home-manager overlay, custom user profiles
   users/<login>/    Per-user customizations (one dir per declared user)
-  machines/<host>/  Per-host install artefacts (disk layout, hardware)
+  machines/<host>/  Per-host files: configuration.nix, install/, hardware/
   secrets/          SOPS secrets and deploy key (never edited by hand)
 var/generated/      Generator output — commit it, never edit it
 dnf/                Symlink to the framework tree (created by `nix run .#init`)
@@ -113,6 +113,10 @@ just full-install poste        # install + configure + first deployment
 `full-install` chains `just install` (nixos-anywhere + disko),
 `just configure` (hardware extraction, key push) and `just apply-verbose`.
 Each step can be run on its own if something goes wrong.
+
+The install freezes the disk layout and `system.stateVersion` of the host in
+`usr/machines/<host>/install/` (committed). From then on, the `disko:` block
+of `etc/config.yaml` has no effect and can be removed.
 
 ### 6. Day-to-day
 

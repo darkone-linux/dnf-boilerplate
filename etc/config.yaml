@@ -217,10 +217,11 @@ users: {}
 #   arch        — "x86_64" (default), or "aarch64:rpi5" / "aarch64:rpi4" /
 #                 "aarch64:rpi3" / "aarch64:rpi02" for a Raspberry Pi
 #   disko       — disk layout, consulted at install time only. `profile` names
-#                 a file of dnf/hosts/disko/ (btrfs-1-disk, ext4-1-disk,
-#                 ext4-1-disk-legacy, luks-btrfs-1-disk, server-1-disk,
-#                 server-4-disks) or of usr/hosts/disko/; `devices` maps the
-#                 layout's device slots to real block devices.
+#                 a file of usr/hosts/disko/ or dnf/hosts/disko/ (btrfs-1-disk,
+#                 ext4-1-disk, ext4-1-disk-legacy, luks-btrfs-1-disk,
+#                 server-1-disk, server-4-disks); `devices` is required, one
+#                 block device per disk of the profile (/dev/disk/by-id/...
+#                 recommended). Frozen at install, removable afterwards.
 #   range       — [from, to] to template multiple identical hosts at once
 #   hosts       — sub-host map for nearly-identical hosts with per-host overrides
 #

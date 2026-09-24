@@ -15,10 +15,10 @@ reads what you put here.
 - **`home/nixos/<name>.nix`** — NixOS side of each custom profile above.
 - **`users/<login>/`** — per-user customizations. One directory per declared
   user, **required** (it is imported unconditionally).
-- **`machines/<hostname>/`** — per-host install artefacts, seeded by
-  `just generate` for hosts carrying a `disko:` block.
+- **`machines/<hostname>/`** — per-host files: `configuration.nix` (yours),
+  `install/` (frozen at install), `hardware/` (probed). See its README.
 - **`hosts/disko/<name>.nix`** — your own disk layouts, if the framework
-  profiles (`dnf/hosts/disko/`) don't fit.
+  profiles (`dnf/hosts/disko/`) don't fit. Same name = shadows the framework one.
 - **`secrets/`** — SOPS-encrypted secrets and the deploy public key. Created
   by `just configure-admin-host`. **Never** edited by hand or by automation.
 

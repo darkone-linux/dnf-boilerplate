@@ -17,7 +17,7 @@ usr/                Votre surcouche locale
   modules/          Modules NixOS propres à ce déploiement
   home/             Surcouche home-manager, profils utilisateurs perso
   users/<login>/    Personnalisations par utilisateur (un dossier par login)
-  machines/<hôte>/  Artefacts d'installation (disques, matériel)
+  machines/<hôte>/  Fichiers par hôte : configuration.nix, install/, hardware/
   secrets/          Secrets SOPS et clé de déploiement (jamais à la main)
 var/generated/      Sortie du générateur — à commiter, jamais à éditer
 dnf/                Symlink vers le framework (créé par `nix run .#init`)
@@ -117,6 +117,10 @@ just full-install poste        # installation + configuration + déploiement
 `full-install` enchaîne `just install` (nixos-anywhere + disko),
 `just configure` (extraction matérielle, envoi des clés) et
 `just apply-verbose`. Chaque étape reste utilisable séparément en cas d'échec.
+
+L'installation fige la disposition des disques et le `system.stateVersion` de
+l'hôte dans `usr/machines/<hôte>/install/` (commité). Le bloc `disko:` de
+`etc/config.yaml` n'a alors plus d'effet et peut être retiré.
 
 ### 6. Au quotidien
 
