@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 
+## [0.4.0] - 2026-10-05
+
+### Dependencies
+
+- dnf v0.4.0
+
 ## [0.3.1] - 2026-09-25
 
 ### Dependencies
@@ -44,7 +50,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - dnf v0.2.2
 
-[Unreleased]: https://github.com/darkone-linux/dnf-boilerplate/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/darkone-linux/dnf-boilerplate/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/darkone-linux/dnf-boilerplate/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/darkone-linux/dnf-boilerplate/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/darkone-linux/dnf-boilerplate/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/darkone-linux/dnf-boilerplate/releases/tag/v0.2.2
