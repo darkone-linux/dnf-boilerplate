@@ -1,9 +1,12 @@
-# Darkone NixOS Project Boilerplate
+# Projet Darkone NixOS
+
+> [!NOTE]
+> Copie publiée de [`templates/project/`](https://github.com/darkone-linux/darkone-nixos-framework/tree/v0.5.0/templates/project) du framework, régénérée à chaque release : les modifications se font là-bas.
 
 Point de départ minimal pour un déploiement NixOS bâti sur le
 [Darkone NixOS Framework](https://github.com/darkone-linux/darkone-nixos-framework).
 
-Ce dépôt fournit la structure attendue par le framework, un `etc/config.yaml`
+Ce projet fournit la structure attendue par le framework, un `etc/config.yaml`
 abondamment commenté à remplir, et rien d'autre. Aucun hôte, aucun
 utilisateur, aucun fichier généré — c'est à vous de tout déclarer.
 
@@ -27,8 +30,13 @@ dnf/                Symlink vers le framework (créé par `nix run .#init`)
 
 ### 1. Créer votre dépôt
 
-Depuis le [template](https://github.com/darkone-linux/dnf-boilerplate)
-(bouton *Use this template*), ou par clone. Tout ce qui suit s'y passe.
+```sh
+nix flake new -t github:darkone-linux/darkone-nixos-framework mon-reseau
+cd mon-reseau && git init && git add -A
+```
+
+Ou depuis le [template GitHub](https://github.com/darkone-linux/dnf-boilerplate)
+(bouton *Use this template*). Tout ce qui suit se passe dans le dépôt.
 
 ### 2. Amorcer le framework
 
@@ -60,6 +68,11 @@ Idempotente : crée la clé de déploiement `nix`, les clés age, `.sops.yaml`, 
 mot de passe par défaut et les secrets internes des services déclarés ; ne
 recrée jamais ce qui existe. À relancer après chaque nouveau service, hôte ou
 utilisateur.
+
+> [!IMPORTANT]
+> À lancer sur la machine d'administration, qui est un hôte DNF : les recettes
+> d'administration tournent sous son compte de déploiement `nix`, et
+> s'arrêtent avec un message explicite partout ailleurs.
 
 ### 4. Décrire le déploiement
 
@@ -132,16 +145,15 @@ just clean              # fix + check + generate + format, avant de commiter
 just update-flake       # met à jour les inputs, puis : nix run .#init
 ```
 
-## Épingler une version du framework
+## Version du framework
 
-`flake.nix` suit la branche principale du framework. Pour figer une version,
-pointez l'input sur un tag :
+`flake.nix` épingle une release du framework (tag) ; le `flake.lock` commité
+la fige avec son nixpkgs. Pour monter de version :
 
-```nix
-inputs.dnf.url = "github:darkone-linux/darkone-nixos-framework/v0.1.0";
-```
+1. inscrire le nouveau tag dans `inputs.dnf.url` ;
+2. `nix flake update dnf`, puis commiter `flake.lock`.
 
-…ou surchargez ponctuellement :
+…ou essayer une release sans l'adopter :
 
 ```sh
 nixos-rebuild switch --flake .#<hôte> \

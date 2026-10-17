@@ -1,4 +1,4 @@
-# dnf-boilerplate — consumer Justfile.
+# Darkone NixOS Project — consumer Justfile.
 #
 # `dnf/` is a symlink to the framework tree in the nix store, laid down once by:
 #   nix run github:darkone-linux/darkone-nixos-framework#init

@@ -1,9 +1,12 @@
-# Darkone NixOS Project Boilerplate
+# Darkone NixOS Project
+
+> [!NOTE]
+> Published copy of the framework's [`templates/project/`](https://github.com/darkone-linux/darkone-nixos-framework/tree/v0.5.0/templates/project), regenerated at each release: changes go there.
 
 Minimal starting point for a NixOS deployment built on the
 [Darkone NixOS Framework](https://github.com/darkone-linux/darkone-nixos-framework).
 
-This repository provides the structure the framework expects, a heavily
+This project provides the structure the framework expects, a heavily
 commented `etc/config.yaml` to fill in, and nothing else. No hosts, no users,
 no generated files — everything is yours to declare.
 
@@ -27,8 +30,13 @@ dnf/                Symlink to the framework tree (created by `nix run .#init`)
 
 ### 1. Create your repository
 
-From the [template](https://github.com/darkone-linux/dnf-boilerplate)
-(*Use this template*), or by clone. Everything below happens inside it.
+```sh
+nix flake new -t github:darkone-linux/darkone-nixos-framework my-network
+cd my-network && git init && git add -A
+```
+
+Or from the [GitHub template](https://github.com/darkone-linux/dnf-boilerplate)
+(*Use this template*). Everything below happens inside the repository.
 
 ### 2. Bootstrap
 
@@ -58,6 +66,10 @@ just configure-admin-host
 Idempotent: creates the `nix` deploy key, the age keys, `.sops.yaml`, a default
 password and the internal secrets of the declared services; never recreates
 what exists. Re-run it after adding a service, a host or a user.
+
+> [!IMPORTANT]
+> Run it on the admin machine, which is a DNF host: the admin recipes run as
+> its `nix` deploy account, and stop with an explicit message anywhere else.
 
 ### 4. Describe your deployment
 
@@ -128,16 +140,15 @@ just clean              # fix + check + generate + format, before committing
 just update-flake       # refresh flake inputs, then: nix run .#init
 ```
 
-## Pinning a framework version
+## Framework version
 
-`flake.nix` tracks the framework's main branch. To pin a release, set the input
-to a tag:
+`flake.nix` pins a framework release (tag); the committed `flake.lock` freezes
+it together with its nixpkgs. To upgrade:
 
-```nix
-inputs.dnf.url = "github:darkone-linux/darkone-nixos-framework/v0.1.0";
-```
+1. set the new tag in `inputs.dnf.url`;
+2. `nix flake update dnf`, then commit `flake.lock`.
 
-…or override it for a one-off build:
+…or try a release without committing to it:
 
 ```sh
 nixos-rebuild switch --flake .#<host> \

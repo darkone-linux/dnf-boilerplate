@@ -1,5 +1,5 @@
 {
-  description = "Darkone NixOS Project Boilerplate — starting point for a new deployment.";
+  description = "Darkone NixOS Project — a deployment built on the Darkone NixOS Framework.";
 
   #----------------------------------------------------------------------------
   # FLAKE INPUTS
@@ -24,7 +24,7 @@
   # this URL for an absolute `git+file://` pointing at the sibling checkout.
 
   inputs = {
-    dnf.url = "github:darkone-linux/darkone-nixos-framework/v0.4.0";
+    dnf.url = "github:darkone-linux/darkone-nixos-framework/v0.5.0";
   };
 
   #----------------------------------------------------------------------------
