@@ -1,7 +1,7 @@
 # Your DNF network
 
 > [!NOTE]
-> Published copy of the framework's [`templates/project/`](https://github.com/darkone-linux/darkone-nixos-framework/tree/v0.6.0/templates/project), regenerated at each release: changes go there.
+> Published copy of the framework's [`templates/project/`](https://github.com/darkone-linux/darkone-nixos-framework/tree/v0.6.1/templates/project), regenerated at each release: changes go there.
 
 Welcome! This folder **is** your network. Every machine, user and service is
 described here, as code, and built from it with the
