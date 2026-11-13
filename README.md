@@ -1,7 +1,7 @@
 # Your DNF network
 
 > [!NOTE]
-> Published copy of the framework's [`templates/project/`](https://github.com/darkone-linux/darkone-nixos-framework/tree/v0.6.1/templates/project), regenerated at each release: changes go there.
+> Published copy of the framework's [`templates/project/`](https://github.com/darkone-linux/darkone-nixos-framework/tree/v0.6.2/templates/project), regenerated at each release: changes go there.
 
 Welcome! This folder **is** your network. Every machine, user and service is
 described here, as code, and built from it with the
@@ -90,5 +90,6 @@ nix run .#init                # links dnf/ to the framework
 ```
 
 Then describe your network in `etc/config.yaml` and install the first host:
-see *Creating the project* in the
-[installation guide](https://darkone-linux.github.io/en/doc/admin-guide/install/first-network-installation/).
+see the how-to
+[Create a project by hand](https://darkone-linux.github.io/en/doc/how-to/admin/manual-project/)
+and [Add a machine](https://darkone-linux.github.io/en/doc/admin-guide/install/add-host/).
